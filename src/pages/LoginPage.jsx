@@ -136,9 +136,9 @@ export default function LoginPage() {
         <div className="animate-fadeIn" style={{ textAlign: "center", marginBottom: "28px" }}>
           {schoolInfo.logo ? (
             <img src={schoolInfo.logo} alt="Logo Sekolah" style={{
-              width: 90, height: 90, objectFit: "contain", mixBlendMode: "multiply", background: "transparent",
+              width: 100, height: 100, objectFit: "contain",
+              mixBlendMode: "multiply",
               marginBottom: 12,
-              boxShadow: "0 4px 16px rgba(255,107,107,0.3)"
             }} />
           ) : (
             <div style={{ fontSize: 64, marginBottom: 8 }} className="animate-bounce">🎓</div>
@@ -248,7 +248,7 @@ export default function LoginPage() {
         )}
 
         <p style={{ textAlign: "center", marginTop: 28, fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>
-          Made with ❤️ untuk siswa berprestasi
+          Copyright © 2026 Hairur Rahman
         </p>
       </div>
     </div>
