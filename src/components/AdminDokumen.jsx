@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
-import { db, storage } from "../firebase";
+import React, { useState, useEffect } from "react";
+import { db } from "../firebase";
 import { collection, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import toast from "react-hot-toast";
 
 export default function AdminDokumen({ tahunAjaran, onChangeTahun }) {
@@ -9,10 +8,10 @@ export default function AdminDokumen({ tahunAjaran, onChangeTahun }) {
   const [dokumenList, setDokumenList] = useState({});
   const [tahunList, setTahunList] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState({});
-  const [progress, setProgress] = useState({});
+  const [saving, setSaving] = useState({});
   const [search, setSearch] = useState("");
-  const fileRefs = useRef({});
+  const [urlInputs, setUrlInputs] = useState({});
+  const [editMode, setEditMode] = useState({});
 
   useEffect(() => { fetchTahunList(); }, []); // eslint-disable-line
   useEffect(() => { if (tahunAjaran) fetchData(); }, [tahunAjaran]); // eslint-disable-line
@@ -40,67 +39,52 @@ export default function AdminDokumen({ tahunAjaran, onChangeTahun }) {
     setLoading(false);
   }
 
-  async function handleUpload(nisn, file) {
-    if (!file) return;
-    const ext = file.name.split(".").pop().toLowerCase();
-    const allowed = ["pdf", "jpg", "jpeg", "png", "webp"];
-    if (!allowed.includes(ext)) {
-      toast.error("Format file tidak didukung! (PDF, JPG, PNG, WEBP)");
+  function convertGDriveUrl(url) {
+    // Konversi Google Drive share link ke direct link
+    // https://drive.google.com/file/d/FILE_ID/view → https://drive.google.com/uc?export=download&id=FILE_ID
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match) {
+      return `https://drive.google.com/file/d/${match[1]}/preview`;
+    }
+    return url;
+  }
+
+  async function saveUrl(nisn) {
+    const url = urlInputs[nisn]?.trim();
+    if (!url) {
+      toast.error("Masukkan URL terlebih dahulu!");
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Ukuran file maksimal 10MB!");
+    if (!url.startsWith("http")) {
+      toast.error("URL tidak valid! Harus dimulai dengan http/https");
       return;
     }
-
-    setUploading((prev) => ({ ...prev, [nisn]: true }));
-    setProgress((prev) => ({ ...prev, [nisn]: 0 }));
-
+    setSaving((prev) => ({ ...prev, [nisn]: true }));
     try {
-      const storageRef = ref(storage, `dokumen/${tahunAjaran}/${nisn}/SKL_${nisn}.${ext}`);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-
-      uploadTask.on("state_changed",
-        (snapshot) => {
-          const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-          setProgress((prev) => ({ ...prev, [nisn]: pct }));
-        },
-        (error) => {
-          toast.error("Upload gagal: " + error.message);
-          setUploading((prev) => ({ ...prev, [nisn]: false }));
-        },
-        async () => {
-          const url = await getDownloadURL(uploadTask.snapshot.ref);
-          await setDoc(doc(db, `tahunAjaran/${tahunAjaran}/dokumen`, nisn), {
-            url,
-            fileName: file.name,
-            uploadedAt: new Date().toISOString(),
-            storagePath: `dokumen/${tahunAjaran}/${nisn}/SKL_${nisn}.${ext}`,
-          });
-          toast.success("SKL berhasil diupload! 🎉");
-          setUploading((prev) => ({ ...prev, [nisn]: false }));
-          fetchData();
-        }
-      );
+      const finalUrl = convertGDriveUrl(url);
+      await setDoc(doc(db, `tahunAjaran/${tahunAjaran}/dokumen`, nisn), {
+        url: finalUrl,
+        originalUrl: url,
+        uploadedAt: new Date().toISOString(),
+      });
+      toast.success("URL SKL berhasil disimpan! 🎉");
+      setEditMode((prev) => ({ ...prev, [nisn]: false }));
+      setUrlInputs((prev) => ({ ...prev, [nisn]: "" }));
+      fetchData();
     } catch (e) {
-      toast.error("Gagal upload");
-      setUploading((prev) => ({ ...prev, [nisn]: false }));
+      toast.error("Gagal menyimpan URL");
     }
+    setSaving((prev) => ({ ...prev, [nisn]: false }));
   }
 
   async function handleDelete(nisn) {
-    if (!window.confirm("Hapus dokumen SKL ini?")) return;
+    if (!window.confirm("Hapus URL SKL ini?")) return;
     try {
-      const dok = dokumenList[nisn];
-      if (dok?.storagePath) {
-        const storageRef = ref(storage, dok.storagePath);
-        await deleteObject(storageRef).catch(() => {});
-      }
       await deleteDoc(doc(db, `tahunAjaran/${tahunAjaran}/dokumen`, nisn));
-      toast.success("Dokumen dihapus!");
+      toast.success("SKL dihapus!");
       fetchData();
     } catch (e) {
-      toast.error("Gagal menghapus dokumen");
+      toast.error("Gagal menghapus");
     }
   }
 
@@ -115,7 +99,7 @@ export default function AdminDokumen({ tahunAjaran, onChangeTahun }) {
     <div>
       <h2 style={{ fontSize: 22, color: "var(--text)", marginBottom: 6 }}>📄 Dokumen SKL</h2>
       <p style={{ fontSize: 13, color: "var(--text-light)", fontWeight: 600, marginBottom: 16 }}>
-        Upload Surat Keterangan Kelulusan per siswa
+        Input link URL Google Drive untuk SKL setiap siswa
       </p>
 
       {/* Tahun Selector */}
@@ -131,43 +115,34 @@ export default function AdminDokumen({ tahunAjaran, onChangeTahun }) {
         <>
           {/* Stats */}
           <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-            <div style={{
-              flex: 1, background: "#E8F4FD", borderRadius: "var(--radius-sm)",
-              padding: "12px", textAlign: "center", border: "2px solid var(--blue)30",
-            }}>
+            <div style={{ flex: 1, background: "#E8F4FD", borderRadius: "var(--radius-sm)", padding: "12px", textAlign: "center" }}>
               <div style={{ fontSize: 22, fontWeight: 900, color: "var(--blue)" }}>{siswaList.length}</div>
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-light)" }}>Total Siswa</div>
             </div>
-            <div style={{
-              flex: 1, background: "#EDFFF4", borderRadius: "var(--radius-sm)",
-              padding: "12px", textAlign: "center", border: "2px solid var(--success)30",
-            }}>
+            <div style={{ flex: 1, background: "#EDFFF4", borderRadius: "var(--radius-sm)", padding: "12px", textAlign: "center" }}>
               <div style={{ fontSize: 22, fontWeight: 900, color: "var(--success)" }}>{uploaded}</div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-light)" }}>SKL Diupload</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-light)" }}>SKL Tersedia</div>
             </div>
-            <div style={{
-              flex: 1, background: "#FFF9E6", borderRadius: "var(--radius-sm)",
-              padding: "12px", textAlign: "center", border: "2px solid var(--accent)30",
-            }}>
+            <div style={{ flex: 1, background: "#FFF9E6", borderRadius: "var(--radius-sm)", padding: "12px", textAlign: "center" }}>
               <div style={{ fontSize: 22, fontWeight: 900, color: "#E67E22" }}>{siswaList.length - uploaded}</div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-light)" }}>Belum Upload</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-light)" }}>Belum Ada</div>
             </div>
+          </div>
+
+          {/* Cara pakai */}
+          <div style={{ background: "#F0F7FF", border: "2px solid var(--blue)30", borderRadius: "var(--radius-sm)", padding: "12px 14px", marginBottom: 14 }}>
+            <p style={{ fontSize: 13, fontWeight: 800, color: "var(--blue)", marginBottom: 6 }}>📎 Cara pakai Google Drive:</p>
+            <p style={{ fontSize: 12, color: "var(--text-light)", fontWeight: 600, lineHeight: 1.7 }}>
+              1. Upload file SKL ke Google Drive<br/>
+              2. Klik kanan file → <strong>Share</strong> → <strong>Anyone with the link</strong><br/>
+              3. Copy link → paste di kolom URL di bawah
+            </p>
           </div>
 
           {/* Search */}
           <input className="input-field" placeholder="🔍 Cari siswa..."
             value={search} onChange={(e) => setSearch(e.target.value)}
             style={{ marginBottom: 14 }} />
-
-          {/* Info */}
-          <div style={{
-            background: "#F0F7FF", border: "2px solid var(--blue)30",
-            borderRadius: "var(--radius-sm)", padding: "10px 14px", marginBottom: 14,
-          }}>
-            <p style={{ fontSize: 12, color: "var(--blue)", fontWeight: 700 }}>
-              📎 Format: PDF, JPG, PNG, WEBP • Maks. 10MB per file
-            </p>
-          </div>
 
           {/* List */}
           {loading ? (
@@ -183,8 +158,9 @@ export default function AdminDokumen({ tahunAjaran, onChangeTahun }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {filtered.map((s) => {
                 const dok = dokumenList[s.nisn];
-                const isUp = uploading[s.nisn];
-                const prog = progress[s.nisn] || 0;
+                const isEdit = editMode[s.nisn];
+                const isSaving = saving[s.nisn];
+
                 return (
                   <div key={s.nisn} className="card animate-slideIn" style={{
                     padding: "14px 16px",
@@ -195,36 +171,12 @@ export default function AdminDokumen({ tahunAjaran, onChangeTahun }) {
                       <p style={{ fontSize: 12, color: "var(--text-light)", fontWeight: 600 }}>NISN: {s.nisn}</p>
                     </div>
 
-                    {isUp ? (
-                      /* Progress Bar */
+                    {dok && !isEdit ? (
+                      /* Sudah ada URL */
                       <div>
-                        <div style={{
-                          background: "var(--border)", borderRadius: 10, height: 10, overflow: "hidden",
-                        }}>
-                          <div style={{
-                            width: `${prog}%`, height: "100%",
-                            background: "linear-gradient(90deg, var(--secondary), var(--primary))",
-                            borderRadius: 10, transition: "width 0.3s ease",
-                          }} />
-                        </div>
-                        <p style={{ fontSize: 12, color: "var(--text-light)", fontWeight: 700, marginTop: 4 }}>
-                          Mengupload... {prog}%
-                        </p>
-                      </div>
-                    ) : dok ? (
-                      /* Uploaded State */
-                      <div>
-                        <div style={{
-                          background: "#EDFFF4", borderRadius: 10, padding: "8px 12px",
-                          marginBottom: 8, display: "flex", alignItems: "center", gap: 8,
-                        }}>
+                        <div style={{ background: "#EDFFF4", borderRadius: 10, padding: "8px 12px", marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ fontSize: 18 }}>✅</span>
-                          <div style={{ flex: 1, overflow: "hidden" }}>
-                            <p style={{ fontSize: 12, fontWeight: 800, color: "var(--success)" }}>SKL Tersedia</p>
-                            <p style={{ fontSize: 11, color: "var(--text-light)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {dok.fileName}
-                            </p>
-                          </div>
+                          <p style={{ fontSize: 12, fontWeight: 800, color: "var(--success)" }}>SKL Tersedia</p>
                         </div>
                         <div style={{ display: "flex", gap: 6 }}>
                           <a href={dok.url} target="_blank" rel="noopener noreferrer"
@@ -233,43 +185,46 @@ export default function AdminDokumen({ tahunAjaran, onChangeTahun }) {
                               color: "white", padding: "10px", borderRadius: 10,
                               fontWeight: 800, fontSize: 13, textAlign: "center", textDecoration: "none",
                             }}>
-                            👁️ Lihat
+                            👁️ Lihat SKL
                           </a>
-                          <input type="file" style={{ display: "none" }} ref={(r) => fileRefs.current[s.nisn] = r}
-                            onChange={(e) => handleUpload(s.nisn, e.target.files[0])}
-                            accept=".pdf,.jpg,.jpeg,.png,.webp" />
-                          <button onClick={() => fileRefs.current[s.nisn]?.click()} style={{
-                            flex: 1, background: "#f0f0f0", color: "var(--text)",
-                            padding: "10px", borderRadius: 10, fontWeight: 800, fontSize: 13,
-                          }}>
-                            🔄 Ganti
+                          <button onClick={() => { setEditMode((p) => ({ ...p, [s.nisn]: true })); setUrlInputs((p) => ({ ...p, [s.nisn]: dok.originalUrl || dok.url })); }}
+                            style={{ flex: 1, background: "#f0f0f0", color: "var(--text)", padding: "10px", borderRadius: 10, fontWeight: 800, fontSize: 13 }}>
+                            ✏️ Ganti
                           </button>
-                          <button onClick={() => handleDelete(s.nisn)} style={{
-                            background: "#FF6B6B", color: "white",
-                            width: 38, borderRadius: 10, fontWeight: 700,
-                          }}>
+                          <button onClick={() => handleDelete(s.nisn)}
+                            style={{ background: "#FF6B6B", color: "white", width: 38, borderRadius: 10 }}>
                             🗑️
                           </button>
                         </div>
                       </div>
                     ) : (
-                      /* Upload Button */
-                      <>
-                        <input type="file" style={{ display: "none" }} ref={(r) => fileRefs.current[s.nisn] = r}
-                          onChange={(e) => handleUpload(s.nisn, e.target.files[0])}
-                          accept=".pdf,.jpg,.jpeg,.png,.webp" />
-                        <button onClick={() => fileRefs.current[s.nisn]?.click()}
-                          style={{
-                            width: "100%", padding: "10px",
-                            background: "linear-gradient(135deg, var(--secondary), #3BB8B0)",
-                            color: "white", borderRadius: 10,
-                            fontWeight: 800, fontSize: 13,
-                            border: "none", cursor: "pointer",
-                            boxShadow: "0 3px 10px rgba(78,205,196,0.3)",
-                          }}>
-                          📤 Upload SKL
-                        </button>
-                      </>
+                      /* Input URL */
+                      <div>
+                        <input
+                          className="input-field"
+                          placeholder="Paste link Google Drive di sini..."
+                          value={urlInputs[s.nisn] || ""}
+                          onChange={(e) => setUrlInputs((p) => ({ ...p, [s.nisn]: e.target.value }))}
+                          style={{ marginBottom: 8, fontSize: 13 }}
+                        />
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button onClick={() => saveUrl(s.nisn)} disabled={isSaving}
+                            style={{
+                              flex: 2, background: "linear-gradient(135deg, var(--success), #3ECC61)",
+                              color: "white", padding: "10px", borderRadius: 10,
+                              fontWeight: 800, fontSize: 13,
+                              boxShadow: "0 3px 10px rgba(81,207,102,0.3)",
+                            }}>
+                            {isSaving ? "Menyimpan..." : "💾 Simpan URL"}
+                          </button>
+                          {isEdit && (
+                            <button onClick={() => setEditMode((p) => ({ ...p, [s.nisn]: false }))}
+                              style={{ flex: 1, background: "#f0f0f0", color: "var(--text)", padding: "10px", borderRadius: 10, fontWeight: 800, fontSize: 13 }}>
+                              Batal
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
                 );
