@@ -136,14 +136,14 @@ export default function LoginPage() {
         <div className="animate-fadeIn" style={{ textAlign: "center", marginBottom: "28px" }}>
           {schoolInfo.logo ? (
             <img src={schoolInfo.logo} alt="Logo Sekolah" style={{
-              width: 80, height: 80, borderRadius: "50%", objectFit: "cover",
-              border: "4px solid var(--primary)", marginBottom: 12,
+              width: 80, height: 80, objectFit: "contain",
+              marginBottom: 12,
               boxShadow: "0 4px 16px rgba(255,107,107,0.3)"
             }} />
           ) : (
             <div style={{ fontSize: 64, marginBottom: 8 }} className="animate-bounce">🎓</div>
           )}
-          <h1 style={{ fontSize: 28, color: "var(--primary)", marginBottom: 4 }}>Cek Kelulusan</h1>
+          <h1 style={{ fontSize: 18, color: "var(--primary)", marginBottom: 4 }}>Selamat Datang di Portal Kelulusan Kelas VI</h1>
           <p style={{ fontSize: 14, color: "var(--text-light)", fontWeight: 600 }}>
             {schoolInfo.nama || "Sekolah Dasar"}
           </p>
