@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
-import { collection, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, doc, setDoc } from "firebase/firestore";
 import toast from "react-hot-toast";
 
 const DEFAULT_MAPEL = ["Bahasa Indonesia", "Matematika", "IPA", "IPS", "PKn", "Bahasa Inggris", "Pendidikan Agama"];
@@ -17,8 +17,8 @@ export default function AdminNilai({ tahunAjaran, onChangeTahun }) {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
 
-  useEffect(() => { fetchTahunList(); }, []);
-  useEffect(() => { if (tahunAjaran) fetchData(); }, [tahunAjaran]);
+  useEffect(() => { fetchTahunList(); }, []); // eslint-disable-line
+  useEffect(() => { if (tahunAjaran) fetchData(); }, [tahunAjaran]); // eslint-disable-line
 
   async function fetchTahunList() {
     try {

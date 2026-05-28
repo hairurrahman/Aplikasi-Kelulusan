@@ -14,8 +14,8 @@ export default function AdminDokumen({ tahunAjaran, onChangeTahun }) {
   const [search, setSearch] = useState("");
   const fileRefs = useRef({});
 
-  useEffect(() => { fetchTahunList(); }, []);
-  useEffect(() => { if (tahunAjaran) fetchData(); }, [tahunAjaran]);
+  useEffect(() => { fetchTahunList(); }, []); // eslint-disable-line
+  useEffect(() => { if (tahunAjaran) fetchData(); }, [tahunAjaran]); // eslint-disable-line
 
   async function fetchTahunList() {
     try {

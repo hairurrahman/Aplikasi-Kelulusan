@@ -8,14 +8,10 @@ export default function AdminHome({ tahunAjaran, onChangeTahun }) {
   const [schoolInfo, setSchoolInfo] = useState({});
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchTahunList();
-    fetchSchool();
-  }, []);
+  useEffect(() => { fetchTahunList(); }, []); // eslint-disable-line
+  useEffect(() => { fetchSchool(); }, []); // eslint-disable-line
 
-  useEffect(() => {
-    if (tahunAjaran) fetchStats();
-  }, [tahunAjaran]);
+  useEffect(() => { if (tahunAjaran) fetchStats(); }, [tahunAjaran]); // eslint-disable-line
 
   async function fetchSchool() {
     try {

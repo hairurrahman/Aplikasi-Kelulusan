@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
-import {
-  collection, getDocs, doc, setDoc, deleteDoc, getDoc
-} from "firebase/firestore";
+import { collection, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
 import toast from "react-hot-toast";
 
 const EMPTY_FORM = {
@@ -23,8 +21,8 @@ export default function AdminSiswa({ tahunAjaran, onChangeTahun }) {
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { fetchTahunList(); }, []);
-  useEffect(() => { if (tahunAjaran) fetchSiswa(); }, [tahunAjaran]);
+  useEffect(() => { fetchTahunList(); }, []); // eslint-disable-line
+  useEffect(() => { if (tahunAjaran) fetchSiswa(); }, [tahunAjaran]); // eslint-disable-line
 
   async function fetchTahunList() {
     try {

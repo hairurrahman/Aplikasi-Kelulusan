@@ -43,7 +43,7 @@ export default function AdminDashboard() {
       setLoading(false);
     });
     return unsub;
-  }, []);
+  }, []); // eslint-disable-line
 
   // Load saved tahun ajaran
   useEffect(() => {

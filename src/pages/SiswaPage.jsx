@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { db, storage } from "../firebase";
+import { db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { ref, getDownloadURL } from "firebase/storage";
-import toast from "react-hot-toast";
 
 const STARS = Array.from({ length: 12 }, (_, i) => ({
   id: i,
@@ -33,7 +31,7 @@ export default function SiswaPage() {
     setSiswa(data);
     fetchData(data);
     fetchSchoolInfo();
-  }, []);
+  }, []); // eslint-disable-line
 
   async function fetchSchoolInfo() {
     try {
@@ -80,7 +78,7 @@ export default function SiswaPage() {
     if (!loading && siswa && nilai?.status === "LULUS") {
       setTimeout(launchConfetti, 500);
     }
-  }, [loading, siswa, nilai]);
+  }, [loading, siswa, nilai]); // eslint-disable-line
 
   if (loading) {
     return (
