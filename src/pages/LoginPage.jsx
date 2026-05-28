@@ -10,10 +10,11 @@ const EMOJIS = ["🌟", "🎉", "🌈", "🎓", "⭐", "🏆", "🌺", "🎈"];
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState("siswa"); // siswa | admin
+  const [mode, setMode] = useState("siswa");
   const [nisn, setNisn] = useState("");
   const [tahunAjaran, setTahunAjaran] = useState("");
   const [tahunList, setTahunList] = useState([]);
+  const [loadingTahun, setLoadingTahun] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,30 +24,34 @@ export default function LoginPage() {
   useEffect(() => {
     fetchSchoolInfo();
     fetchTahunAjaran();
-  }, []);
+  }, []); // eslint-disable-line
 
   async function fetchSchoolInfo() {
     try {
-      const ref = doc(db, "settings", "sekolah");
-      const snap = await getDoc(ref);
+      const snap = await getDoc(doc(db, "settings", "sekolah"));
       if (snap.exists()) setSchoolInfo(snap.data());
     } catch (e) {}
   }
 
   async function fetchTahunAjaran() {
+    setLoadingTahun(true);
     try {
-      const ref = collection(db, "tahunAjaran");
-      const snap = await getDocs(ref);
+      const snap = await getDocs(collection(db, "tahunAjaran"));
       const list = snap.docs.map((d) => d.id).sort().reverse();
       setTahunList(list);
       if (list.length > 0) setTahunAjaran(list[0]);
     } catch (e) {}
+    setLoadingTahun(false);
   }
 
   async function handleLoginSiswa(e) {
     e.preventDefault();
-    if (!nisn.trim() || !tahunAjaran) {
-      toast.error("Isi NISN dan pilih Tahun Ajaran!");
+    if (!nisn.trim()) {
+      toast.error("Masukkan NISN dulu ya! 😊");
+      return;
+    }
+    if (!tahunAjaran) {
+      toast.error("Pilih tahun ajaran dulu!");
       return;
     }
     setLoading(true);
@@ -99,23 +104,16 @@ export default function LoginPage() {
       {confetti.length > 0 && (
         <div className="confetti-container">
           {confetti.map((p) => (
-            <div
-              key={p.id}
-              className="confetti-piece"
-              style={{
-                left: `${p.left}%`,
-                background: p.color,
-                width: p.size,
-                height: p.size,
-                animationDelay: `${p.delay}s`,
-                animationDuration: "2.5s",
-              }}
-            />
+            <div key={p.id} className="confetti-piece" style={{
+              left: `${p.left}%`, background: p.color,
+              width: p.size, height: p.size,
+              animationDelay: `${p.delay}s`, animationDuration: "2.5s",
+            }} />
           ))}
         </div>
       )}
 
-      {/* Background decorations */}
+      {/* Background */}
       <div style={{
         position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)",
         width: "430px", maxWidth: "100vw", height: "100vh",
@@ -126,15 +124,10 @@ export default function LoginPage() {
       {/* Floating emojis */}
       {EMOJIS.map((e, i) => (
         <div key={i} style={{
-          position: "fixed",
-          fontSize: "24px",
-          opacity: 0.15,
-          top: `${10 + i * 11}%`,
-          left: i % 2 === 0 ? "5%" : "88%",
+          position: "fixed", fontSize: "24px", opacity: 0.15,
+          top: `${10 + i * 11}%`, left: i % 2 === 0 ? "5%" : "88%",
           animation: `bounce ${2 + i * 0.3}s ease infinite`,
-          animationDelay: `${i * 0.2}s`,
-          pointerEvents: "none",
-          zIndex: 0,
+          animationDelay: `${i * 0.2}s`, pointerEvents: "none", zIndex: 0,
         }}>{e}</div>
       ))}
 
@@ -142,16 +135,15 @@ export default function LoginPage() {
         {/* Header */}
         <div className="animate-fadeIn" style={{ textAlign: "center", marginBottom: "28px" }}>
           {schoolInfo.logo ? (
-            <img src={schoolInfo.logo} alt="Logo Sekolah"
-              style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover",
-                border: "4px solid var(--primary)", marginBottom: 12,
-                boxShadow: "0 4px 16px rgba(255,107,107,0.3)" }} />
+            <img src={schoolInfo.logo} alt="Logo Sekolah" style={{
+              width: 80, height: 80, borderRadius: "50%", objectFit: "cover",
+              border: "4px solid var(--primary)", marginBottom: 12,
+              boxShadow: "0 4px 16px rgba(255,107,107,0.3)"
+            }} />
           ) : (
             <div style={{ fontSize: 64, marginBottom: 8 }} className="animate-bounce">🎓</div>
           )}
-          <h1 style={{ fontSize: 28, color: "var(--primary)", marginBottom: 4 }}>
-            Cek Kelulusan
-          </h1>
+          <h1 style={{ fontSize: 28, color: "var(--primary)", marginBottom: 4 }}>Cek Kelulusan</h1>
           <p style={{ fontSize: 14, color: "var(--text-light)", fontWeight: 600 }}>
             {schoolInfo.nama || "Sekolah Dasar"}
           </p>
@@ -165,8 +157,7 @@ export default function LoginPage() {
         }}>
           {["siswa", "admin"].map((m) => (
             <button key={m} onClick={() => setMode(m)} style={{
-              flex: 1, padding: "12px 0",
-              borderRadius: 10,
+              flex: 1, padding: "12px 0", borderRadius: 10,
               background: mode === m ? "linear-gradient(135deg, var(--primary), var(--primary-dark))" : "transparent",
               color: mode === m ? "white" : "var(--text-light)",
               fontSize: 15, fontWeight: 800,
@@ -178,76 +169,74 @@ export default function LoginPage() {
           ))}
         </div>
 
-        {/* Siswa Login Form */}
+        {/* Siswa Form */}
         {mode === "siswa" && (
           <div className="card animate-slideIn">
-            <h2 style={{ fontSize: 22, color: "var(--text)", marginBottom: 6 }}>
-              Halo, Siswa! 👋
-            </h2>
+            <h2 style={{ fontSize: 22, color: "var(--text)", marginBottom: 6 }}>Halo, Siswa! 👋</h2>
             <p style={{ fontSize: 13, color: "var(--text-light)", marginBottom: 20, fontWeight: 600 }}>
               Masukkan NISN kamu untuk cek kelulusan
             </p>
             <form onSubmit={handleLoginSiswa}>
               <div style={{ marginBottom: 16 }}>
-                <label style={{ fontSize: 13, fontWeight: 700, color: "var(--text-light)", display: "block", marginBottom: 6 }}>
-                  📋 NISN (Nomor Induk Siswa)
-                </label>
-                <input
-                  className="input-field"
-                  type="text"
+                <label style={labelStyle}>📋 NISN (Nomor Induk Siswa)</label>
+                <input className="input-field" type="text"
                   placeholder="Contoh: 0123456789"
-                  value={nisn}
-                  onChange={(e) => setNisn(e.target.value)}
-                  maxLength={10}
-                />
+                  value={nisn} onChange={(e) => setNisn(e.target.value)} maxLength={10} />
               </div>
+
               <div style={{ marginBottom: 24 }}>
-                <label style={{ fontSize: 13, fontWeight: 700, color: "var(--text-light)", display: "block", marginBottom: 6 }}>
-                  📅 Tahun Ajaran
-                </label>
-                {tahunList.length > 0 ? (
-                  <select
-                    className="input-field"
-                    value={tahunAjaran}
-                    onChange={(e) => setTahunAjaran(e.target.value)}
-                  >
+                <label style={labelStyle}>📅 Tahun Ajaran</label>
+                {loadingTahun ? (
+                  <div style={{
+                    padding: "14px 18px", border: "2.5px solid var(--border)",
+                    borderRadius: "var(--radius-sm)", background: "#FFFAF5",
+                    color: "var(--text-muted)", fontWeight: 600, fontSize: 14,
+                  }}>
+                    ⏳ Memuat tahun ajaran...
+                  </div>
+                ) : tahunList.length > 0 ? (
+                  <select className="input-field" value={tahunAjaran}
+                    onChange={(e) => setTahunAjaran(e.target.value)}>
+                    <option value="">-- Pilih Tahun Ajaran --</option>
                     {tahunList.map((t) => (
                       <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
                 ) : (
-                  <input className="input-field" placeholder="Belum ada data tahun ajaran"
-                    value={tahunAjaran} onChange={(e) => setTahunAjaran(e.target.value)} />
+                  <div style={{
+                    padding: "14px 18px", border: "2.5px solid #FFE66D",
+                    borderRadius: "var(--radius-sm)", background: "#FFFBF0",
+                    color: "#E67E22", fontWeight: 700, fontSize: 13,
+                    display: "flex", alignItems: "center", gap: 8,
+                  }}>
+                    ⚠️ Belum ada tahun ajaran. Hubungi admin sekolah.
+                  </div>
                 )}
               </div>
-              <button className="btn-primary" type="submit" disabled={loading}>
+
+              <button className="btn-primary" type="submit"
+                disabled={loading || tahunList.length === 0 || !tahunAjaran}>
                 {loading ? "Memeriksa..." : "🔍 Cek Kelulusan"}
               </button>
             </form>
           </div>
         )}
 
-        {/* Admin Login Form */}
+        {/* Admin Form */}
         {mode === "admin" && (
           <div className="card animate-slideIn">
-            <h2 style={{ fontSize: 22, color: "var(--text)", marginBottom: 6 }}>
-              Login Admin 🔐
-            </h2>
+            <h2 style={{ fontSize: 22, color: "var(--text)", marginBottom: 6 }}>Login Admin 🔐</h2>
             <p style={{ fontSize: 13, color: "var(--text-light)", marginBottom: 20, fontWeight: 600 }}>
               Khusus untuk guru dan staff sekolah
             </p>
             <form onSubmit={handleLoginAdmin}>
               <div style={{ marginBottom: 16 }}>
-                <label style={{ fontSize: 13, fontWeight: 700, color: "var(--text-light)", display: "block", marginBottom: 6 }}>
-                  📧 Email
-                </label>
+                <label style={labelStyle}>📧 Email</label>
                 <input className="input-field" type="email" placeholder="admin@sekolah.com"
                   value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div style={{ marginBottom: 24 }}>
-                <label style={{ fontSize: 13, fontWeight: 700, color: "var(--text-light)", display: "block", marginBottom: 6 }}>
-                  🔑 Password
-                </label>
+                <label style={labelStyle}>🔑 Password</label>
                 <input className="input-field" type="password" placeholder="••••••••"
                   value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
@@ -258,7 +247,6 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* Footer */}
         <p style={{ textAlign: "center", marginTop: 28, fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>
           Made with ❤️ untuk siswa berprestasi
         </p>
@@ -266,3 +254,7 @@ export default function LoginPage() {
     </div>
   );
 }
+
+const labelStyle = {
+  fontSize: 13, fontWeight: 700, color: "var(--text-light)", display: "block", marginBottom: 6
+};

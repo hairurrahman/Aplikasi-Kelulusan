@@ -3,7 +3,17 @@ import { db } from "../firebase";
 import { collection, getDocs, doc, setDoc } from "firebase/firestore";
 import toast from "react-hot-toast";
 
-const DEFAULT_MAPEL = ["Bahasa Indonesia", "Matematika", "IPA", "IPS", "PKn", "Bahasa Inggris", "Pendidikan Agama"];
+const DEFAULT_MAPEL = [
+  "Pendidikan Agama Islam dan Budi Pekerti",
+  "Pendidikan Pancasila",
+  "Bahasa Indonesia",
+  "Matematika",
+  "Ilmu Pengetahuan Alam dan Sosial",
+  "Pendidikan Jasmani Olahraga dan Kesehatan",
+  "Seni dan Budaya",
+  "Bahasa Inggris",
+  "Bahasa Madura",
+];
 
 export default function AdminNilai({ tahunAjaran, onChangeTahun }) {
   const [siswaList, setSiswaList] = useState([]);
