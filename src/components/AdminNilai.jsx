@@ -95,7 +95,7 @@ export default function AdminNilai({ tahunAjaran, onChangeTahun }) {
   // Download template xlsx nilai
   function downloadTemplate() {
     const header = ["NISN", "Nama", ...MAPEL_URUTAN, "Status (LULUS/TIDAK LULUS)", "Catatan"];
-    const contoh = ["1234567890", "Nama Siswa", ...MAPEL_URUTAN.map(() => parseFloat((80).toFixed(2))), "LULUS", ""];
+    const contoh = ["1234567890", "Nama Siswa", ...MAPEL_URUTAN.map(() => "80.00"), "LULUS", ""];
     const ws = XLSX.utils.aoa_to_sheet([header, contoh]);
     const colWidths = [{ wch: 15 }, { wch: 25 }, ...MAPEL_URUTAN.map(() => ({ wch: 20 })), { wch: 25 }, { wch: 20 }];
     ws["!cols"] = colWidths;
@@ -153,8 +153,8 @@ export default function AdminNilai({ tahunAjaran, onChangeTahun }) {
       const n = nilaiList[s.nisn];
       rows.push([
         s.nisn, s.nama || "",
-        ...MAPEL_URUTAN.map(m => n?.mapel?.[m] != null ? Number(n.mapel[m]).toFixed(2) : ""),
-        n?.status || "", n?.rataRata != null ? Number(n.rataRata).toFixed(2) : "", n?.catatan || "",
+        ...MAPEL_URUTAN.map(m => n?.mapel?.[m] != null ? Number(n.mapel[m]).toFixed(2) : "0.00"),
+        n?.status || "", n?.rataRata != null ? Number(n.rataRata).toFixed(2) : "0.00", n?.catatan || "",
       ]);
     });
     const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -308,7 +308,7 @@ export default function AdminNilai({ tahunAjaran, onChangeTahun }) {
                         {n ? (
                           <>
                             <span style={{ background: n.status === "LULUS" ? "var(--success)" : "#FF6B6B", color: "white", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 800, display: "block", marginBottom: 3 }}>{n.status}</span>
-                            <span style={{ fontSize: 12, color: "var(--text-light)", fontWeight: 700 }}>⭐ {Number(n.rataRata).toFixed(2)}</span>
+                            <span style={{ fontSize: 12, color: "var(--text-light)", fontWeight: 700 }}>⭐ {Number(n.rataRata || 0).toFixed(2)}</span>
                           </>
                         ) : (
                           <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>Belum ada nilai</span>
