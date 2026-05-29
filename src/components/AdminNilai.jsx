@@ -95,7 +95,7 @@ export default function AdminNilai({ tahunAjaran, onChangeTahun }) {
   // Download template xlsx nilai
   function downloadTemplate() {
     const header = ["NISN", "Nama", ...MAPEL_URUTAN, "Status (LULUS/TIDAK LULUS)", "Catatan"];
-    const contoh = ["1234567890", "Nama Siswa", ...MAPEL_URUTAN.map(() => 80), "LULUS", ""];
+    const contoh = ["1234567890", "Nama Siswa", ...MAPEL_URUTAN.map(() => parseFloat((80).toFixed(2))), "LULUS", ""];
     const ws = XLSX.utils.aoa_to_sheet([header, contoh]);
     const colWidths = [{ wch: 15 }, { wch: 25 }, ...MAPEL_URUTAN.map(() => ({ wch: 20 })), { wch: 25 }, { wch: 20 }];
     ws["!cols"] = colWidths;
@@ -153,8 +153,8 @@ export default function AdminNilai({ tahunAjaran, onChangeTahun }) {
       const n = nilaiList[s.nisn];
       rows.push([
         s.nisn, s.nama || "",
-        ...MAPEL_URUTAN.map(m => n?.mapel?.[m] ?? ""),
-        n?.status || "", n?.rataRata || "", n?.catatan || "",
+        ...MAPEL_URUTAN.map(m => n?.mapel?.[m] != null ? Number(n.mapel[m]).toFixed(2) : ""),
+        n?.status || "", n?.rataRata != null ? Number(n.rataRata).toFixed(2) : "", n?.catatan || "",
       ]);
     });
     const ws = XLSX.utils.aoa_to_sheet(rows);
