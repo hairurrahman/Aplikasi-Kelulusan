@@ -36,7 +36,7 @@ export default function AdminSiswa({ tahunAjaran, onChangeTahun }) {
     setLoading(true);
     try {
       const snap = await getDocs(collection(db, `tahunAjaran/${tahunAjaran}/siswa`));
-      setSiswaList(snap.docs.map((d) => ({ ...d.data(), nisn: d.id })));
+      setSiswaList(snap.docs.map((d) => ({ ...d.data(), nisn: d.id })).sort((a, b) => (a.nama || "").localeCompare(b.nama || "", "id")));
     } catch (e) {}
     setLoading(false);
   }

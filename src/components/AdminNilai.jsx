@@ -48,7 +48,7 @@ export default function AdminNilai({ tahunAjaran, onChangeTahun }) {
         getDocs(collection(db, `tahunAjaran/${tahunAjaran}/siswa`)),
         getDocs(collection(db, `tahunAjaran/${tahunAjaran}/nilai`)),
       ]);
-      setSiswaList(siswaSnap.docs.map((d) => ({ ...d.data(), nisn: d.id })));
+      setSiswaList(siswaSnap.docs.map((d) => ({ ...d.data(), nisn: d.id })).sort((a, b) => (a.nama || "").localeCompare(b.nama || "", "id")));
       const nilaiMap = {};
       nilaiSnap.docs.forEach((d) => { nilaiMap[d.id] = d.data(); });
       setNilaiList(nilaiMap);
@@ -69,7 +69,7 @@ export default function AdminNilai({ tahunAjaran, onChangeTahun }) {
   function calcRataRata(mapel) {
     const vals = Object.values(mapel).filter((v) => v !== "" && !isNaN(v)).map(Number);
     if (vals.length === 0) return 0;
-    return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10;
+    return parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2));
   }
 
   async function saveNilai() {
@@ -211,7 +211,7 @@ export default function AdminNilai({ tahunAjaran, onChangeTahun }) {
             ))}
             <div style={{ marginTop: 12, padding: "12px 16px", background: "linear-gradient(135deg, var(--accent), #FFD700)", borderRadius: "var(--radius-sm)", display: "flex", justifyContent: "space-between" }}>
               <span style={{ fontWeight: 800 }}>⭐ Rata-rata</span>
-              <span style={{ fontWeight: 900, fontSize: 18 }}>{calcRataRata(form)}</span>
+              <span style={{ fontWeight: 900, fontSize: 18 }}>{Number(calcRataRata(form)).toFixed(2)}</span>
             </div>
           </div>
 
@@ -308,7 +308,7 @@ export default function AdminNilai({ tahunAjaran, onChangeTahun }) {
                         {n ? (
                           <>
                             <span style={{ background: n.status === "LULUS" ? "var(--success)" : "#FF6B6B", color: "white", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 800, display: "block", marginBottom: 3 }}>{n.status}</span>
-                            <span style={{ fontSize: 12, color: "var(--text-light)", fontWeight: 700 }}>⭐ {n.rataRata}</span>
+                            <span style={{ fontSize: 12, color: "var(--text-light)", fontWeight: 700 }}>⭐ {Number(n.rataRata).toFixed(2)}</span>
                           </>
                         ) : (
                           <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>Belum ada nilai</span>

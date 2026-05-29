@@ -198,13 +198,13 @@ export default function SiswaPage() {
                     background: item.val >= 70 ? "linear-gradient(135deg, var(--success), #3ECC61)" : "linear-gradient(135deg, #FF6B6B, #E05555)",
                     color: "white", padding: "4px 14px", borderRadius: 20,
                     fontWeight: 800, fontSize: 14, minWidth: 52, textAlign: "center", flexShrink: 0,
-                  }}>{item.val}</div>
+                  }}>{Number(item.val).toFixed(2)}</div>
                 </div>
               ))}
               {nilai?.rataRata !== undefined && (
                 <div style={{ marginTop: 12, padding: "12px 16px", background: "linear-gradient(135deg, var(--accent), #FFD700)", borderRadius: "var(--radius-sm)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontWeight: 800, fontSize: 14 }}>⭐ Rata-rata</span>
-                  <span style={{ fontWeight: 900, fontSize: 18 }}>{nilai.rataRata}</span>
+                  <span style={{ fontWeight: 900, fontSize: 18 }}>{Number(nilai.rataRata).toFixed(2)}</span>
                 </div>
               )}
             </div>
